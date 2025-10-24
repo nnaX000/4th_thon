@@ -40,6 +40,10 @@ dependencies {
 	//데이터 파싱 툴
 	implementation 'org.jsoup:jsoup:1.17.2'
 	implementation 'com.google.code.gson:gson:2.11.0'
+
+	implementation 'org.apache.commons:commons-text:1.10.0'
+
+	implementation 'org.springframework.boot:spring-boot-starter-webflux'
 }
 
 tasks.named('test') {

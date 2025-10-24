@@ -2,6 +2,7 @@ package com.example.fourth.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,18 +30,18 @@ public class Result {
     private String topic;
 
     @Column(name = "new_concept")
-    private String newConcept;
+    private int newConcept;
 
-    @Column(name = "new_cc_content")
+    @Column(name = "new_cc_content", columnDefinition = "JSON")
     private String newCcContent;
 
     @Column(name = "redirect_concept")
-    private String redirectConcept;
+    private int redirectConcept;
 
-    @Column(name = "redirect_cc_content")
+    @Column(name = "redirect_cc_content", columnDefinition = "JSON")
     private String redirectCcContent;
 
-    @Column(name = "reference")
+    @Column(name = "reference", columnDefinition = "JSON")
     private String reference;
 
     @Column(name = "created_at")
