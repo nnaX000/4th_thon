@@ -36,7 +36,7 @@ public class Report {
     }
 
     @Enumerated(EnumType.STRING)
-    private ReportOption option; // 주제별 or 통합
+    private ReportOption options; // 주제별 or 통합
 
     private boolean notion; // 노션 업로드 여부 (true/false)
 

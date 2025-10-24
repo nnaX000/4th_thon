@@ -55,7 +55,6 @@ public class EntranceController {
 
                 // 주제 파싱
                 String topicField = entrance.getTopic();
-                System.out.println("토픽들: " + topicField);
 
                 List<String> topics = Arrays.stream(topicField.split(","))
                         .map(String::trim)
