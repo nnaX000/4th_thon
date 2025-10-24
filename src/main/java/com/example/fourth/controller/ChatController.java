@@ -14,13 +14,12 @@ public class ChatController {
     }
 
     @GetMapping("/crawl")
-    public String crawl(@RequestParam String url) {
+    public String crawl(@RequestParam Long userId, @RequestParam String url) {
         try {
-            String result=crawlerService.crawlChat(url);
-            return result;
+            return crawlerService.crawlChat(userId, url);
         } catch (Exception e) {
             e.printStackTrace();
-            return "오류: " + e.getMessage();
+            return "오류 발생: " + e.getMessage();
         }
     }
 }
