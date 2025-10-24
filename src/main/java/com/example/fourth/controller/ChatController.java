@@ -13,10 +13,10 @@ public class ChatController {
         this.crawlerService = crawlerService;
     }
 
-    @GetMapping("/crawl")
+    @GetMapping("/analyze")
     public String crawl(@RequestParam Long userId, @RequestParam String url) {
         try {
-            return crawlerService.crawlChat(userId, url);
+            return crawlerService.analyzeChat(userId, url);
         } catch (Exception e) {
             e.printStackTrace();
             return "오류 발생: " + e.getMessage();

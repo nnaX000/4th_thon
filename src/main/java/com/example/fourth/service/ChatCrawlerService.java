@@ -10,6 +10,8 @@ import org.springframework.web.client.RestTemplate;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 @Service
 public class ChatCrawlerService {
@@ -20,32 +22,36 @@ public class ChatCrawlerService {
     @Autowired
     private UserRepository userRepository;  // 유저 찾기용
 
-    public String crawlChat(Long userId, String url) throws IOException {
-        // 1. URL 파싱
+    @Autowired
+    private OpenAIService openAIService;
+
+    public String analyzeChat(Long userId, String url) throws IOException {
         String shareId = url.substring(url.lastIndexOf("/") + 1);
         String proxyUrl = "https://r.jina.ai/https://chatgpt.com/share/" + shareId;
 
-        // 2. 요청 보내기
+        // 2. 대화 내용 요청
         RestTemplate restTemplate = new RestTemplate();
         String result = restTemplate.getForObject(proxyUrl, String.class);
 
-        // 3. DB 저장
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 유저가 존재하지 않습니다."));
+
         Extract_txt extract = Extract_txt.builder()
                 .user(user)
                 .extract(result)
                 .build();
         extractTxtRepository.save(extract);
 
-        // 4. 파일 저장 (유저별 폴더 생성)
-        Path userDir = Paths.get("outputs", "user_" + userId);
-        Files.createDirectories(userDir);
+        String prompt = "다음 대화의 가장 큰 핵심 주제들을 간단하게 키워드로만 3개 정도 한국어로 내뱉어줘 예를 들어 async/await 이런식으로:\n\n" + result;
+        String apiResponse = openAIService.getTopicFromOpenAI(prompt);
 
-        String filename = "chat_output_" + System.currentTimeMillis() + ".txt";
-        Path output = userDir.resolve(filename);
-        Files.writeString(output, result, StandardCharsets.UTF_8);
+        JsonObject jsonObject = JsonParser.parseString(apiResponse).getAsJsonObject();
+        String content = jsonObject
+                .getAsJsonArray("choices")
+                .get(0).getAsJsonObject()
+                .getAsJsonObject("message")
+                .get("content").getAsString();
 
-        return "대화가 DB 및 " + output + " 에 저장되었습니다.";
+        return content;
     }
 }
