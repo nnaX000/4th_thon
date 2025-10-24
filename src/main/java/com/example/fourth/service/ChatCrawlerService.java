@@ -8,8 +8,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import java.io.*;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.util.HashMap;
+import java.util.Map;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -25,7 +25,7 @@ public class ChatCrawlerService {
     @Autowired
     private OpenAIService openAIService;
 
-    public String analyzeChat(Long userId, String url) throws IOException {
+    public Map<String, Object> analyzeChat(Long userId, String url) throws IOException {
         String shareId = url.substring(url.lastIndexOf("/") + 1);
         String proxyUrl = "https://r.jina.ai/https://chatgpt.com/share/" + shareId;
 
@@ -52,6 +52,10 @@ public class ChatCrawlerService {
                 .getAsJsonObject("message")
                 .get("content").getAsString();
 
-        return content;
+        Map<String, Object> response = new HashMap<>();
+        response.put("extract_id", extract.getId());
+        response.put("content", content);
+
+        return response;
     }
 }
