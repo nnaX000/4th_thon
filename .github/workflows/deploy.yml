@@ -69,10 +69,12 @@ jobs:
 
             # 컨테이너 실행
             docker run -d --name 4th_thon -p 8080:8080 \
-                       -e SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }} \
-                       -e SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }} \
-                       -e SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }} \
-                       -e SPRING_JPA_HIBERNATE_DDL_AUTO=update \
-                       nayoungg/4th_thon
+                -e SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }} \
+                -e SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }} \
+                -e SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }} \
+                -e SPRING_JPA_HIBERNATE_DDL_AUTO=update \
+                -e openai.api.key=${{ secrets.OPENAI_API_KEY }} \
+                -e openai.api.url=${{ secrets.OPENAI_API_URL }} \
+                nayoungg/4th_thon
           
           EOF
