@@ -25,7 +25,7 @@ public class ChatCrawlerService {
     @Autowired
     private OpenAIService openAIService;
 
-    public Map<String, Object> analyzeChat(Long userId, String url) throws IOException {
+    public Map<String, Object> analyzeChat(int userId, String url) throws IOException {
         String shareId = url.substring(url.lastIndexOf("/") + 1);
         String proxyUrl = "https://r.jina.ai/https://chatgpt.com/share/" + shareId;
 

@@ -30,7 +30,7 @@ public class EntranceService {
         Entrance entrance = Entrance.builder()
                 .user(user)
                 .extract(extract)
-                .analysis_option(Entrance.OptionType.valueOf(request.getOption()))
+                .analysis_option(request.getOption())
                 .topic(request.getTopic())
                 .build();
 

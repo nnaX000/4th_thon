@@ -9,6 +9,10 @@ import com.example.fourth.service.EntranceService;
 import com.example.fourth.service.OpenAIService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.*;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -38,12 +42,67 @@ public class EntranceController {
         this.openAIService = openAIService;
     }
 
-    // 세션 시작
+    @Operation(
+            summary = "세션 생성하기 버튼 눌렀을 시에 사용자가 선택한 옵션들을 보냄 (Entrance 생성)",
+            description = """
+    사용자의 분석 세션을 시작합니다.  
+    - `option`은 무조건 '전체통합' 또는 '특정주제' 중 하나를 선택합니다.  
+    - `topic`은 선택한 주제를 **쉼표( , )로 구분**하여 여러 개 보낼 수 있습니다.  
+      예: `"SSL,TLS,보안 프로토콜"`
+    - 반환되는 entrance-id는 이후 요청에 필요함.
+    """,
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "세션 생성 요청 데이터 (사용자 ID, 추출 ID, 옵션, 주제 목록 등)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            examples = @ExampleObject(value = """
+            {
+              "userId": 1,
+              "extractId": 1,
+              "option": "특정주제",
+              "topic": "SSL,TLS,보안 프로토콜"
+            }
+            """)
+                    )
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "세션 생성 성공 — entrance-id 반환",
+                            content = @Content(mediaType = "application/json",
+                                    examples = @ExampleObject(value = """
+                42
+                """))
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "잘못된 요청 — 필수 데이터 누락 또는 형식 오류",
+                            content = @Content(mediaType = "application/json",
+                                    examples = @ExampleObject(value = """
+                {
+                  "error": "option 또는 topic 값이 유효하지 않습니다."
+                }
+                """))
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description = "서버 내부 오류 — 세션 생성 중 예외 발생",
+                            content = @Content(mediaType = "application/json",
+                                    examples = @ExampleObject(value = """
+                {
+                  "error": "세션 생성 중 오류가 발생했습니다."
+                }
+                """))
+                    )
+            }
+    )
     @PostMapping("/start")
     public ResponseEntity<Long> startAnalysis(@RequestBody EntranceRequest request) {
         Long entranceId = entranceService.createEntrance(request);
         return ResponseEntity.ok(entranceId); //entrance-id 반환
     }
+
 
     //학습분석 진행 및 실시간 전송
     @GetMapping(value = "/progress", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
