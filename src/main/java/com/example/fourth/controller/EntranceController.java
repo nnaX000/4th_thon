@@ -10,16 +10,18 @@ import com.example.fourth.service.OpenAIService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.*;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.Mono;
+import reactor.core.publisher.FluxSink;
+import reactor.core.scheduler.Schedulers;
 
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -104,17 +106,67 @@ public class EntranceController {
     }
 
 
-    //학습분석 진행 및 실시간 전송
+    // ====== 학습 분석 진행 (SSE 실시간 전송) ======
+    @Operation(
+            summary = "학습 분석 진행 (SSE 실시간 전송)",
+            description = """
+    학습 분석을 단계별로 진행하며, 각 단계별 상태를 **SSE(Server-Sent Events)** 형태로 실시간 전송합니다.
+    
+    ### 응답 형식 (다음과 같은 형태로 실시간 응답이 전송됩니다.)
+    ```
+    event:start
+    data:{"phase":"start","step":"전처리","topic":"SSL TLS","progress":0}
+
+    event:done
+    data:{"phase":"done","step":"전처리","topic":"SSL TLS","progress":20}
+
+    event:start
+    data:{"phase":"start","step":"엔티티 추출","topic":"SSL TLS","progress":20}
+
+    event:done
+    data:{"phase":"done","step":"엔티티 추출","topic":"SSL TLS","progress":40}
+
+    event:update
+    data:{"phase":"update","step":"개념 분석","topic":"SSL TLS","progress":65,"payload":{"new_concept_count":3}}
+    ```
+
+    ### 주요 단계
+    - 전처리 (0 → 20%)
+    - 엔티티 추출 (20 → 40%)
+    - 개념 분석 (40 → 85%)
+    - 자료 큐레이션 (85 → 100%)
+    - 완료 시 `event: complete` 전송
+    """,
+            parameters = {
+                    @Parameter(
+                            name = "entranceId",
+                            description = "분석을 진행할 Entrance 엔티티의 ID",
+                            required = true,
+                            example = "1"
+                    )
+            },
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "SSE 스트림으로 실시간 분석 이벤트 전송",
+                            content = @Content(mediaType = MediaType.TEXT_EVENT_STREAM_VALUE)
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "잘못된 entranceId 요청"
+                    )
+            }
+    )
     @GetMapping(value = "/progress", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<String> analyze(@RequestParam Long entranceId) {
-        return Flux.create(emitter -> {
+    public Flux<ServerSentEvent<String>> analyze(@RequestParam Long entranceId) {
+
+        // ★ 제네릭을 명시해서 Flux<Object>로 추론되는 걸 막는다
+        return Flux.<ServerSentEvent<String>>create(emitter -> {
             try {
                 Entrance entrance = entranceRepository.findById(entranceId)
                         .orElseThrow(() -> new IllegalArgumentException("entrance 없음"));
 
-                // 주제 파싱
                 String topicField = entrance.getTopic();
-
                 List<String> topics = Arrays.stream(topicField.split(","))
                         .map(String::trim)
                         .filter(t -> !t.isEmpty())
@@ -122,32 +174,31 @@ public class EntranceController {
 
                 String content = entrance.getExtract().getExtract();
 
-                // ===== 각 주제별로 개별 처리 =====
-                for (String topic : topics) {
-                    int progress = 0;
-
+                // 블로킹 작업(OpenAI 호출 등)을 별도 스레드에서 수행
+                Schedulers.boundedElastic().schedule(() -> {
                     try {
-                        // ===== 1. 전처리 =====
-                        emitter.next(json("start", "전처리", topic, progress, null));
-                        Mono.delay(Duration.ofSeconds(5)).block();
-                        progress = 20;
-                        emitter.next(json("done", "전처리", topic, progress, null));
+                        for (String topic : topics) {
+                            int progress = 0;
 
-                        // ===== 2. 엔티티 추출 =====
-                        emitter.next(json("start", "엔티티 추출", topic, progress, null));
-                        Mono.delay(Duration.ofSeconds(5)).block();
-                        progress = 40;
-                        emitter.next(json("done", "엔티티 추출", topic, progress, null));
+                            // ===== 1. 전처리 =====
+                            emitter.next(event("start", json("start", "전처리", topic, progress, null)));
+                            sleep(2000);
+                            progress = 20;
+                            emitter.next(event("done", json("done", "전처리", topic, progress, null)));
 
-                        // ===== 3. 개념 분석 =====
-                        emitter.next(json("start", "개념 분석", topic, progress, null));
+                            // ===== 2. 엔티티 추출 =====
+                            emitter.next(event("start", json("start", "엔티티 추출", topic, progress, null)));
+                            sleep(2000);
+                            progress = 40;
+                            emitter.next(event("done", json("done", "엔티티 추출", topic, progress, null)));
 
-                        // 3-1 새로 알게된 개념
-                        String newConceptPrompt = String.format("""
+                            // ===== 3. 개념 분석 =====
+                            emitter.next(event("start", json("start", "개념 분석", topic, progress, null)));
+
+                            String newConceptPrompt = String.format("""
                             사용자가 학습한 주제 "%s"에 대해 새롭게 알게 된 개념만을 JSON 형식으로 정리해줘.
                             ⚠️ 반드시 아래 형식을 "정확히" 따라야 해. 설명이나 문장, 마크다운, ```json 같은 건 절대 추가하지 마.
                             출력은 무조건 다음 구조로만 반환해:
-                            
                             {
                               "새로알게된": {
                                 "1": "첫 번째 개념 내용",
@@ -155,31 +206,24 @@ public class EntranceController {
                                 "3": "세 번째 개념 내용"
                               }
                             }
-                            
                             반드시 위 JSON 구조만 반환하고, 추가 문장은 절대 쓰지 마.
                             주제: "%s"
                             대화 내용: %s
                             """, topic, topic, content);
 
-                        String newConceptResponse = openAIService.getTopicFromOpenAI(newConceptPrompt);
-                        String newConceptContent = cleanJsonBlock(extractContent(newConceptResponse));
-                        String prettyNewConcept = prettyJson(newConceptContent);
+                            String newConceptResponse = openAIService.getTopicFromOpenAI(newConceptPrompt);
+                            String newConceptContent = cleanJsonBlock(extractContent(newConceptResponse));
+                            String prettyNewConcept = prettyJson(newConceptContent);
 
-                        List<String> newConcepts = parseJsonArray(newConceptContent, "새로알게된");
+                            int newConceptCount = countItems(newConceptContent, "새로알게된");
 
-                        progress = 65;
-                        emitter.next(json("update", "개념 분석", topic, progress,
-                                Map.of("new_concept", newConcepts.size())));
+                            emitter.next(event("update", json("update", "개념 분석", topic, 65,
+                                    Map.of("new_concept_count", newConceptCount))));
 
-                        // 3-2 바로 잡은 개념
-                        String redirectPrompt = String.format("""
+                            String redirectPrompt = String.format("""
                             사용자가 주제 "%s"를 학습하면서 잘못 알고 있던 개념과,
                             이를 통해 올바르게 바로잡은 이해를 **한 쌍으로** JSON 형식으로 정리해줘.
-                            
                             ⚠️ 반드시 아래 구조를 "정확히" 따라야 해.
-                            설명, 문장, ```json 코드블록, 추가 문구는 절대 포함하지 마.
-                            오직 JSON만 반환해야 해.
-                            
                             {
                               "바로잡은": {
                                 "1": {
@@ -192,98 +236,84 @@ public class EntranceController {
                                 }
                               }
                             }
-                            
-                            이 구조를 반드시 따르고,
-                            해당 주제 "%s"와 관련 없는 내용은 절대 포함하지 마.
-                            만약 수정할 개념이 없다면 다음과 같이만 출력해:
-                            {"바로잡은": "없음"}
-                            
-                            대화 내용:
-                            %s
                             """, topic, topic, content);
 
-                        String redirectResponse = openAIService.getTopicFromOpenAI(redirectPrompt);
-                        String redirectContent = cleanJsonBlock(extractContent(redirectResponse));
-                        String prettyRedirectConcept = prettyJson(redirectContent);
-                        List<String> redirectConcepts = parseJsonArray(redirectContent, "바로잡은");
+                            String redirectResponse = openAIService.getTopicFromOpenAI(redirectPrompt);
+                            String redirectContent = cleanJsonBlock(extractContent(redirectResponse));
+                            String prettyRedirectConcept = prettyJson(redirectContent);
 
-                        progress = 85;
-                        emitter.next(json("done", "개념 분석", topic, progress,
-                                Map.of("new_concept_list", newConcepts,
-                                        "redirect_concept_list", redirectConcepts)));
+                            int redirectConceptCount = countItems(redirectContent, "바로잡은");
 
-                        // ===== 4. 자료 큐레이션 =====
-                        emitter.next(json("start", "자료 큐레이션", topic, progress, null));
+                            emitter.next(event("done", json("done", "개념 분석", topic, 85,
+                                    Map.of("new_concept_count", newConceptCount,
+                                            "redirect_concept_count", redirectConceptCount))));
 
-                        String refPrompt = String.format("""
+                            // ===== 4. 자료 큐레이션 =====
+                            emitter.next(event("start", json("start", "자료 큐레이션", topic, 85, null)));
+
+                            String refPrompt = String.format("""
                             주제 "%s"를 더 깊이 이해하기 위한 참고 자료(논문, 튜토리얼, 블로그, 공식문서 등)를
                             **JSON 형식으로만** 2~3개 추천해줘.
-                            
-                            ⚠️ 아래 구조를 반드시 지켜야 하며, 
-                            그 외의 설명문, 문장, ```json 코드블록, 불필요한 텍스트는 절대 포함하지 마.
-                            반드시 JSON 객체만 반환해야 해.
-                            
+                            ⚠️ 반드시 아래 구조를 "정확히" 따라야 해.
                             {
                               "추천자료": {
-                                "1": {
-                                  "제목": "MDN async/await 문서",
-                                  "링크": "https://developer.mozilla.org/ko/docs/Learn/JavaScript/Asynchronous/Promises"
-                                },
-                                "2": {
-                                  "제목": "모던 자바스크립트 딥다이브 13장 - 비동기 처리",
-                                  "링크": "https://poiemaweb.com/js-async"
-                                }
+                                "1": { "제목": "MDN async/await 문서",
+                                       "링크": "https://developer.mozilla.org/ko/docs/Learn/JavaScript/Asynchronous/Promises" }
                               }
                             }
-                            
-                            위 구조를 반드시 따르고,
-                            주제 "%s"와 직접적으로 관련된 자료만 포함해.
-                            관련 자료가 전혀 없으면 다음과 같이 출력해:
-                            {"추천자료": "없음"}
                             """, topic, topic);
 
-                        String refResponse = openAIService.getTopicFromOpenAI(refPrompt);
-                        String refContent = cleanJsonBlock(extractContent(refResponse));
-                        String prettyRef = prettyJson(refContent);
-                        List<String> references = parseJsonArray(refContent, "추천자료");
+                            String refResponse = openAIService.getTopicFromOpenAI(refPrompt);
+                            String refContent = cleanJsonBlock(extractContent(refResponse));
+                            String prettyRef = prettyJson(refContent);
 
-                        progress = 100;
-                        emitter.next(json("done", "자료 큐레이션", topic, progress,
-                                Map.of("reference", references)));
+                            emitter.next(event("done", json("done", "자료 큐레이션", topic, 100, null)));
 
-                        // DB 저장
-                        Result result = Result.builder()
-                                .entrance(entrance)
-                                .user(entrance.getUser())
-                                .topic(topic)
-                                .newConcept(newConcepts.size())
-                                .newCcContent(safeJson(prettyNewConcept))
-                                .redirectConcept(redirectConcepts.size())
-                                .redirectCcContent(safeJson(prettyRedirectConcept))
-                                .reference(safeJson(prettyRef))
-                                .createdAt(LocalDateTime.now())
-                                .build();
+                            // ===== DB 저장 =====
+                            Result result = Result.builder()
+                                    .entrance(entrance)
+                                    .user(entrance.getUser())
+                                    .topic(topic)
+                                    .newConcept(newConceptCount)
+                                    .newCcContent(safeJson(prettyNewConcept))
+                                    .redirectConcept(redirectConceptCount)
+                                    .redirectCcContent(safeJson(prettyRedirectConcept))
+                                    .reference(safeJson(prettyRef))
+                                    .createdAt(LocalDateTime.now())
+                                    .build();
 
-                        resultRepository.save(result);
+                            resultRepository.save(result);
+                        }
 
-                    } catch (Exception e) {
-                        System.err.println("오류 발생 (topic=" + topic + "): " + e.getMessage());
-                        emitter.next(json("error", "오류", topic, progress,
-                                Map.of("message", e.getMessage())));
+                        emitter.next(event("complete", json("all_done", "전체", "모든 주제 완료", 100, null)));
+                        emitter.complete();
+
+                    } catch (Exception ex) {
+                        emitter.next(event("error", json("error", "오류", null, 0, Map.of("message", ex.getMessage()))));
+                        emitter.complete();
                     }
-                }
-
-                emitter.next(json("all_done", "전체", "모든 주제 완료", 100, null));
-                emitter.complete();
+                });
 
             } catch (Exception e) {
-                emitter.next(json("error", "오류", null, 0, Map.of("message", e.getMessage())));
+                emitter.next(event("error", json("error", "오류", null, 0, Map.of("message", e.getMessage()))));
                 emitter.complete();
             }
-        });
+        }, FluxSink.OverflowStrategy.BUFFER);
     }
 
-    /** 진행 이벤트를 JSON 문자열로 생성 */
+    /* ---------- 헬퍼들 ---------- */
+
+    private static void sleep(long ms) {
+        try { Thread.sleep(ms); } catch (InterruptedException ignored) {}
+    }
+
+    private ServerSentEvent<String> event(String name, String data) {
+        return ServerSentEvent.<String>builder()
+                .event(name)
+                .data(data)
+                .build();
+    }
+
     private String json(String phase, String step, String topic, int progress, Map<String, Object> payload) {
         StringBuilder sb = new StringBuilder();
         sb.append("{")
@@ -291,7 +321,6 @@ public class EntranceController {
                 .append("\"step\":\"").append(step).append("\",")
                 .append("\"topic\":").append(topic == null ? "null" : "\"" + topic + "\"").append(",")
                 .append("\"progress\":").append(progress);
-
         if (payload != null && !payload.isEmpty()) {
             sb.append(",\"payload\":").append(toJsonObject(payload));
         }
@@ -299,7 +328,6 @@ public class EntranceController {
         return sb.toString();
     }
 
-    /** Map을 JSON 객체로 직렬화 */
     private String toJsonObject(Map<String, Object> map) {
         StringBuilder sb = new StringBuilder("{");
         boolean first = true;
@@ -316,34 +344,17 @@ public class EntranceController {
         return sb.toString();
     }
 
-    /** JSON 파싱 유틸 */
-    private List<String> parseJsonArray(String json, String key) {
+    private int countItems(String json, String key) {
         try {
             JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
-            JsonArray array = obj.getAsJsonArray(key);
-            List<String> list = new ArrayList<>();
-            array.forEach(e -> list.add(e.getAsString()));
-            return list;
-        } catch (Exception e) {
-            return Arrays.stream(json.split("\\r?\\n"))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .toList();
-        }
+            if (!obj.has(key)) return 0;
+            JsonElement el = obj.get(key);
+            if (el.isJsonPrimitive() && "없음".equals(el.getAsString())) return 0;
+            if (el.isJsonObject()) return el.getAsJsonObject().entrySet().size();
+            return 0;
+        } catch (Exception e) { return 0; }
     }
 
-    private String prettyJson(String rawJson) {
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            Object json = mapper.readValue(rawJson, Object.class);
-            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
-        } catch (Exception e) {
-            System.err.println("JSON 파싱 실패, 원본 그대로 반환: " + e.getMessage());
-            return rawJson; // 그대로 반환 (raw_text 감싸지 않음)
-        }
-    }
-
-    /** GPT 응답 JSON에서 message.content만 추출 */
     private String extractContent(String response) {
         try {
             JsonObject obj = JsonParser.parseString(response).getAsJsonObject();
@@ -357,30 +368,9 @@ public class EntranceController {
         } catch (Exception e) {
             System.err.println("GPT 응답 파싱 실패: " + e.getMessage());
         }
-        return response;
+        return response; // 실패 시 원문 반환
     }
 
-    // 아래 메서드들을 EntranceController 안쪽에 추가해 주세요
-    private String safeJson(String raw) {
-        if (raw == null) return "{}";
-
-        try {
-            // JSON인지 검사
-            com.google.gson.JsonParser.parseString(raw);
-            return raw;
-        } catch (Exception e) {
-            // JSON 아님 → 안전하게 escape해서 문자열로 감싸기
-            String escaped = raw
-                    .replace("\\", "\\\\")
-                    .replace("\"", "\\\"")
-                    .replace("\n", "\\n")
-                    .replace("\r", "\\r");
-
-            return String.format("{\"raw_text\": \"%s\"}", escaped);
-        }
-    }
-
-    // 코드블록(```json ... ```)을 제거하고 순수 JSON만 남김
     private String cleanJsonBlock(String text) {
         if (text == null) return "";
         text = text.replaceAll("(?s)```json\\s*", "");
@@ -388,5 +378,23 @@ public class EntranceController {
         return text.trim();
     }
 
+    private String prettyJson(String rawJson) {
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            Object json = mapper.readValue(rawJson, Object.class);
+            return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(json);
+        } catch (Exception e) {
+            System.err.println("JSON 파싱 실패: " + e.getMessage());
+            return rawJson;
+        }
+    }
 
+    private String safeJson(String raw) {
+        if (raw == null) return "{}";
+        try { JsonParser.parseString(raw); return raw; }
+        catch (Exception e) {
+            String escaped = raw.replace("\\","\\\\").replace("\"","\\\"").replace("\n","\\n").replace("\r","\\r");
+            return String.format("{\"raw_text\": \"%s\"}", escaped);
+        }
+    }
 }
