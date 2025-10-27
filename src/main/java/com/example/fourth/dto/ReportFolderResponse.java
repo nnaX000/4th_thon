@@ -5,7 +5,7 @@ import lombok.Data;
 
 @AllArgsConstructor
 @Data
-public class FolderResponse {
+public class ReportFolderResponse {
     private Long id;
     private String name;
 }
