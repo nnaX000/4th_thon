@@ -24,45 +24,58 @@ public class ReportService {
 
     public Map<String, Object> generateReport(Long entranceId, Long userId, Report.ReportOption options) {
         List<Result> results = resultRepository.findByEntranceIdAndUserId(entranceId, userId);
-
         if (results.isEmpty()) {
             throw new IllegalArgumentException("해당 entranceId와 userId에 대한 결과가 없습니다.");
         }
 
-        Map<String, Object> response = new LinkedHashMap<>();
-        response.put("entranceId", entranceId);
-        response.put("userId", userId);
-
-        // 주제별로 결과 구성
-        Map<String, Object> topicResults = new LinkedHashMap<>();
-        List<String> topicTitles = new ArrayList<>();
+        // 정규화된 데이터 리스트
+        List<Map<String, Object>> normalizedList = new ArrayList<>();
 
         for (Result result : results) {
-            topicTitles.add(result.getTopic());
+            Map<String, Object> flat = new LinkedHashMap<>();
+            flat.put("entrance_id", entranceId);
+            flat.put("user_id", userId);
+            flat.put("topic", result.getTopic());
+            flat.put("new_concept_count", result.getNewConcept());
+            flat.put("redirect_concept_count", result.getRedirectConcept());
 
-            Map<String, Object> topicData = new LinkedHashMap<>();
-            topicData.put("topic", result.getTopic());
-            topicData.put("newConceptCount", result.getNewConcept());
-            topicData.put("redirectConceptCount", result.getRedirectConcept());
-            topicData.put("newConcept", parseJson(result.getNewCcContent()));
-            topicData.put("redirectConcept", parseJson(result.getRedirectCcContent()));
-            topicData.put("reference", parseJson(result.getReference()));
+            // newConcept
+            Map<String, Object> newConcept = parseToMap(result.getNewCcContent(), "새로알게된");
+            int i = 1;
+            for (Object value : newConcept.values()) {
+                flat.put("new_concept_" + i++, value);
+            }
 
-            topicResults.put(result.getTopic(), topicData);
+            // redirectConcept
+            Map<String, Object> redirectConcept = parseToMap(result.getRedirectCcContent(), "바로잡은");
+            i = 1;
+            for (Object value : redirectConcept.values()) {
+                if (value instanceof Map<?, ?> map) {
+                    flat.put("redirect_" + i + "_wrong", map.get("잘못된이해"));
+                    flat.put("redirect_" + i + "_correct", map.get("올바른이해"));
+                }
+                i++;
+            }
+
+            // reference
+            Map<String, Object> reference = parseToMap(result.getReference(), "추천자료");
+            i = 1;
+            for (Object value : reference.values()) {
+                if (value instanceof Map<?, ?> ref) {
+                    flat.put("reference_" + i + "_title", ref.get("제목"));
+                    flat.put("reference_" + i + "_link", ref.get("링크"));
+                }
+                i++;
+            }
+
+            normalizedList.add(flat);
         }
 
-        String joinedTitle = String.join(" / ", topicTitles);
+        // 최종 응답 JSON — normalized만 포함
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("normalized", normalizedList);
 
-        // 통합 리포트 처리 (option = TOTAL)
-        if (options == Report.ReportOption.TOTAL) {
-            response.put("title", joinedTitle);
-        } else if (options == Report.ReportOption.TOPIC && !topicTitles.isEmpty()) {
-            response.put("title", topicTitles.get(0));
-        }
-
-        response.put("results", topicResults);
-
-        // Fetch Entrance and User
+        // DB 저장
         var entranceOpt = entranceRepository.findById(entranceId);
         var userOpt = userRepository.findById(Math.toIntExact(userId));
         if (entranceOpt.isEmpty() || userOpt.isEmpty()) {
@@ -74,7 +87,7 @@ public class ReportService {
             Report report = Report.builder()
                     .entrance(entranceOpt.get())
                     .user(userOpt.get())
-                    .title(options == Report.ReportOption.TOTAL ? joinedTitle : (topicTitles.isEmpty() ? "" : topicTitles.get(0)))
+                    .title(resultTitle(results))
                     .options(options)
                     .content(contentJson)
                     .createdAt(LocalDateTime.now())
@@ -85,15 +98,29 @@ public class ReportService {
             throw new RuntimeException("리포트 저장 중 에러 발생", e);
         }
 
-        return response;
+        return response; // normalized만 반환
     }
 
-    private Object parseJson(String json) {
-        if (json == null || json.isBlank()) return null;
+    // JSON에서 특정 key를 꺼내어 Map으로 변환
+    private Map<String, Object> parseToMap(String json, String key) {
+        if (json == null || json.isBlank()) return new LinkedHashMap<>();
         try {
-            return new ObjectMapper().readValue(json, Object.class);
+            ObjectMapper mapper = new ObjectMapper();
+            Map<String, Object> outer = mapper.readValue(json, Map.class);
+            if (outer.containsKey(key) && outer.get(key) instanceof Map<?, ?> inner) {
+                return (Map<String, Object>) inner;
+            }
+            return outer;
         } catch (Exception e) {
-            return Map.of("error", "JSON 파싱 실패", "raw", json);
+            return new LinkedHashMap<>();
         }
+    }
+
+    // 여러 토픽명을 슬래시(/)로 연결한 제목 생성
+    private String resultTitle(List<Result> results) {
+        return results.stream()
+                .map(Result::getTopic)
+                .distinct()
+                .collect(Collectors.joining(" / "));
     }
 }
