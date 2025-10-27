@@ -1,6 +1,7 @@
 package com.example.fourth.controller;
 
 
+import com.example.fourth.dto.FolderResponse;
 import com.example.fourth.dto.ReportFolderRequest;
 import com.example.fourth.entity.Report;
 import com.example.fourth.service.ReportFolderService;
@@ -9,6 +10,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/report")
@@ -36,6 +39,11 @@ public class ReportFolderController {
                 request.getUserId()
         );
         return ResponseEntity.ok(updated);
+    }
+
+    @GetMapping("/folders")
+    public List<FolderResponse> getFolders(@RequestParam int userId) {
+        return reportFolderService.getFolderByUser(userId);
     }
 
 }

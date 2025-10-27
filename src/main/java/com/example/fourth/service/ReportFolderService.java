@@ -1,6 +1,7 @@
 package com.example.fourth.service;
 
 
+import com.example.fourth.dto.FolderResponse;
 import com.example.fourth.entity.Folder;
 import com.example.fourth.entity.Report;
 import com.example.fourth.entity.User;
@@ -9,6 +10,8 @@ import com.example.fourth.repository.ReportRepository;
 import com.example.fourth.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -41,5 +44,12 @@ public class ReportFolderService {
 
         report.setFolder(folder);
         return reportRepository.save(report);
+    }
+
+    public List<FolderResponse> getFolderByUser(int userId) {
+        List<Folder> folders = folderRepository.findByUser_Id(userId);
+        return folders.stream()
+                .map(folder -> new FolderResponse(folder.getId(), folder.getName()))
+                .toList();
     }
 }
