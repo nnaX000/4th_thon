@@ -4,10 +4,8 @@ import com.example.fourth.entity.Report;
 import lombok.Data;
 
 @Data
-public class ReportSaveRequest {
-    private Long entranceId;
-    private Long userId;
+public class ReportFolderRequest {
+    private Long reportId;
+    private Integer userId;
     private String folderName;
-    private Report.ReportOption option;
-
 }
