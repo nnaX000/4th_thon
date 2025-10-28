@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/report")
@@ -86,10 +87,11 @@ public class ReportFolderController {
                 request.getFolderName(),
                 request.getUserId()
         );
-        // Dto로 변환되면 다시 updated만 내뱉는 걸로 수정하기
-        return ResponseEntity.ok(new ReportFolderResponse(
-                updated.getFolder().getId(),
-                updated.getFolder().getName()
+
+        return ResponseEntity.ok(Map.of(
+                "reportId", updated.getId(),
+                "folderName", updated.getFolder().getName(),
+                "userId", updated.getUser().getId()
         ));
     }
 
