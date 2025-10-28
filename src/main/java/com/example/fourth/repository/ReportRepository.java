@@ -9,4 +9,5 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ReportRepository extends JpaRepository<Report, Long> {
+    List<Report>findByFolder_Id(long folderId);
 }
