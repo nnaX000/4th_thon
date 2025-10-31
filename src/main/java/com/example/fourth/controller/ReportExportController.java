@@ -1,6 +1,7 @@
 package com.example.fourth.controller;
 
 
+import com.example.fourth.service.NotionExportService;
 import com.example.fourth.service.ReportExportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -12,16 +13,14 @@ import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/report/export")
 public class ReportExportController {
     private final ReportExportService reportExportService;
+    private final NotionExportService notionExportService;
 
     // 마크다운
     @Operation(
@@ -83,4 +82,52 @@ public class ReportExportController {
                 .contentLength(resource.contentLength())
                 .body(resource);
     }
+
+    @Operation(
+            summary = "노션으로 내보내기",
+            description = """
+                지정된 리포트를 사용자의 Notion 계정에 새 페이지로 생성합니다.  
+                이 기능을 사용하기 전, 반드시 `/api/notion/authorize` → `/api/notion/callback` 과정을 통해  
+                사용자가 Notion OAuth 연동을 완료해야 합니다.
+                """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "노션 페이지 생성 성공",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(value = """
+                                {
+                                  "message": "노션으로 내보내기 완료"
+                                }
+                                """)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description = "Notion 토큰이 없음 또는 잘못된 요청",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    examples = @ExampleObject(value = """
+                                {
+                                  "error": "사용자의 Notion 토큰이 없습니다. 먼저 OAuth 연동을 완료해주세요."
+                                }
+                                """)
+                            )
+                    )
+            }
+    )
+    @PostMapping("/{reportId}/notion")
+    public ResponseEntity<String> exportToNotion(
+            @PathVariable Long reportId,
+            @Parameter(description = "사용자 이메일", example = "user@example.com")
+            @RequestParam String email,
+            @Parameter(description = "노션 부모 페이지 ID", example = "244247ac69f68033a9d8dbd2c0ad34e5")
+            @RequestParam String parentPageId
+    ) {
+        notionExportService.exportToNotion(reportId, parentPageId, email);
+        return ResponseEntity.ok("노션으로 내보내기 완료");
+    }
+
+
 }

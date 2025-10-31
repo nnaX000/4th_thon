@@ -56,4 +56,17 @@ public class UserService {
         return user;
     }
 
+    public void saveNotionToken(String email, String token) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("사용자가 없습니다."));
+        user.setNotionToken(token);
+        userRepository.save(user);
+    }
+
+    public boolean hasNotionToken(String email) {
+        return userRepository.findByEmail(email)
+                .map(user -> user.getNotionToken()!=null && !user.getNotionToken().isBlank())
+                .orElse(false);
+    }
+
 }

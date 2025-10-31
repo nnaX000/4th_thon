@@ -22,4 +22,7 @@ public class User {
 
     @Column(nullable = false)
     String password;
+
+    @Column(nullable = true)
+    String notionToken;
 }
