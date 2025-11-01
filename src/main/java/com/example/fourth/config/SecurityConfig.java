@@ -29,7 +29,7 @@ public class SecurityConfig {
                     return config;
                 }))
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/api/user/**","/swagger-ui/**", "/v3/api-docs/**","/chat/**","/entrance/**","/result/**","/report/**").permitAll()
+                        .requestMatchers("/api/user/**","api/notion/**","/swagger-ui/**", "/v3/api-docs/**","/chat/**","/entrance/**","/result/**","/report/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess
