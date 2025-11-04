@@ -25,7 +25,7 @@ public class UserController {
 
     // 유저 생성
     @Operation(
-            summary = "회원가입",
+            summary = "회원가입 - 김나영",
             description = "새로운 사용자를 생성합니다. 이메일, 닉네임, 비밀번호를 필수로 입력해야 합니다.",
             requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
@@ -56,7 +56,7 @@ public class UserController {
 
     // 닉네임 중복 검사
     @Operation(
-            summary = "닉네임 중복 검사",
+            summary = "닉네임 중복 검사 - 김나영",
             description = "입력한 닉네임이 이미 존재하는지 확인합니다.",
             parameters = {
                     @Parameter(name = "nickname", description = "검사할 닉네임", example = "nayoung", required = true)
@@ -72,7 +72,7 @@ public class UserController {
 
     // 이메일 중복 검사
     @Operation(
-            summary = "이메일 중복 검사",
+            summary = "이메일 중복 검사 - 김나영",
             description = "입력한 이메일이 이미 존재하는지 확인합니다.",
             parameters = {
                     @Parameter(name = "email", description = "검사할 이메일", example = "test@example.com", required = true)
@@ -88,7 +88,7 @@ public class UserController {
 
     //로그인
     @Operation(
-            summary = "로그인",
+            summary = "로그인 - 김나영",
             description = """
 이메일과 비밀번호를 사용하여 로그인합니다.  
 로그인 성공 시 회원의 고유 ID(`id`)가 반환됩니다.  
