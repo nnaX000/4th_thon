@@ -81,6 +81,6 @@ jobs:
                 -e notion.redirect.uri=${{ secrets.NOTION_REDIRECT_URI }} \
                 -e notion.auth.url=${{ secrets.NOTION_AUTH_URL }} \
                 -e notion.token.url=${{ secrets.NOTION_TOKEN_URL }} \
-                nayoungg/4th_thon
+                 nayoungg/4th_thon
           
           EOF
