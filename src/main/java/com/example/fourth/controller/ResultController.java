@@ -19,7 +19,7 @@ public class ResultController {
     private final ResultService resultService;
 
     @Operation(
-            summary = "분석 결과 요약 조회",
+            summary = "분석 결과 요약 조회 - 김나영",
             description = """
     주어진 entranceId와 userId를 기반으로, 사용자가 진행한 학습 분석 결과를 반환합니다.
 

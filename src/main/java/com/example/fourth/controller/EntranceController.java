@@ -45,7 +45,7 @@ public class EntranceController {
     }
 
     @Operation(
-            summary = "세션 생성하기 버튼 눌렀을 시에 사용자가 선택한 옵션들을 보냄 (Entrance 생성)",
+            summary = "세션 생성하기 버튼 눌렀을 시에 사용자가 선택한 옵션들을 보냄 (Entrance 생성) - 김나영",
             description = """
     사용자의 분석 세션을 시작합니다.  
     - `option`은 무조건 '전체통합' 또는 '특정주제' 중 하나를 선택합니다.  
@@ -108,7 +108,7 @@ public class EntranceController {
 
     // ====== 학습 분석 진행 (SSE 실시간 전송) ======
     @Operation(
-            summary = "학습 분석 진행 (SSE 실시간 전송)",
+            summary = "학습 분석 진행 (SSE 실시간 전송) - 김나영",
             description = """
     학습 분석을 단계별로 진행하며, 각 단계별 상태를 **SSE(Server-Sent Events)** 형태로 실시간 전송합니다.
     
