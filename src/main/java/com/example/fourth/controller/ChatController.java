@@ -22,7 +22,7 @@ public class ChatController {
     }
 
     @Operation(
-            summary = "지피티 채팅 URL을 입력하고 분석하기 버튼 눌렀을 때 extract_id와 추출된 토픽 단어들을 반환",
+            summary = "지피티 채팅 URL을 입력하고 분석하기 버튼 눌렀을 때 extract_id와 추출된 토픽 단어들을 반환 - 김나영",
             description = "지피티 채팅 URL을 입력하고 분석하기 버튼 눌렀을 때 extract_id와 추출된 토픽 단어들을 반환합니다. extract_id는 이후 세션 생성할 때 필요하니 user_id와 같이 보관해두셔야 합니다.",
             parameters = {
                     @Parameter(

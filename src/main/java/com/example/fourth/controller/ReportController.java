@@ -23,7 +23,7 @@ public class ReportController {
     private final ReportService reportGenerateService;
 
     @Operation(
-            summary = "리포트 생성",
+            summary = "리포트 생성 - 김나영",
             description = """
     entrance_Id와 user_Id, options 를 기반으로 리포트를 생성합니다.
     옵션(`options`)에 따라 결과가 다르게 반환됩니다.
