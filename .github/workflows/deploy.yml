@@ -43,7 +43,7 @@ jobs:
 
       - name: Deploy to EC2
         run: |
-          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@${{ secrets.EC2_HOST }} << EOF
+          ssh -o StrictHostKeyChecking=no -i ec2_key.pem ubuntu@${{ secrets.EC2_HOST }} << 'EOF'
             # Docker 로그인
             docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" -p "${{ secrets.DOCKER_HUB_PASSWORD }}"
 
@@ -67,22 +67,6 @@ jobs:
             # 최신 이미지 풀받기
             docker pull nayoungg/4th_thon:latest
 
-            # 컨테이너 실행
-            docker run -d --name 4th_thon -p 8080:8080 \
-                -e SPRING_DATASOURCE_URL=${{ secrets.SPRING_DATASOURCE_URL }} \
-                -e SPRING_DATASOURCE_USERNAME=${{ secrets.SPRING_DATASOURCE_USERNAME }} \
-                -e SPRING_DATASOURCE_PASSWORD=${{ secrets.SPRING_DATASOURCE_PASSWORD }} \
-                -e SPRING_JPA_HIBERNATE_DDL_AUTO=update \
-                -e openai.api.key=${{ secrets.OPENAI_API_KEY }} \
-                -e openai.api.url=${{ secrets.OPENAI_API_URL }} \
-                -e notion.token=${{ secrets.NOTION_TOKEN }} \
-                -e notion.client.id=${{ secrets.NOTION_CLIENT_ID }} \
-                -e notion.client.secret=${{ secrets.NOTION_CLIENT_SECRET }} \
-                -e notion.redirect.uri=${{ secrets.NOTION_REDIRECT_URI }} \
-                -e notion.auth.url=${{ secrets.NOTION_AUTH_URL }} \
-                -e notion.token.url=${{ secrets.NOTION_TOKEN_URL }} \
-                 nayoungg/4th_thon
-          
-            # 새 컨테이너 실행
+            # 새 컨테이너 실행 (한 줄로 작성)
             docker run -d --name 4th_thon -p 8080:8080 -e SPRING_DATASOURCE_URL="${{ secrets.SPRING_DATASOURCE_URL }}" -e SPRING_DATASOURCE_USERNAME="${{ secrets.SPRING_DATASOURCE_USERNAME }}" -e SPRING_DATASOURCE_PASSWORD="${{ secrets.SPRING_DATASOURCE_PASSWORD }}" -e SPRING_JPA_HIBERNATE_DDL_AUTO=update -e openai.api.key="${{ secrets.OPENAI_API_KEY }}" -e openai.api.url="${{ secrets.OPENAI_API_URL }}" -e notion.token="${{ secrets.NOTION_TOKEN }}" -e notion.client.id="${{ secrets.NOTION_CLIENT_ID }}" -e notion.client.secret="${{ secrets.NOTION_CLIENT_SECRET }}" -e notion.redirect.uri="${{ secrets.NOTION_REDIRECT_URI }}" -e notion.auth.url="${{ secrets.NOTION_AUTH_URL }}" -e notion.token.url="${{ secrets.NOTION_TOKEN_URL }}" nayoungg/4th_thon
           EOF
