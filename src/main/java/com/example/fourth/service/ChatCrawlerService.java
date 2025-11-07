@@ -42,7 +42,7 @@ public class ChatCrawlerService {
                 .build();
         extractTxtRepository.save(extract);
 
-        String prompt = "다음 대화의 가장 큰 핵심 주제들을 간단하게 키워드로만 3개 정도 한국어로 내뱉어줘 예를 들어 async/await 이런식으로:\n\n" + result;
+        String prompt = "다음 대화의 가장 큰 핵심 주제들을 간단하게 키워드로만 3개 정도 한국어로 내뱉어줘 예를 들어 async/await 이런식으로:\n\n 그리고 그 각 핵심 주제들이 대화 전체에서 몇 퍼센트를 차지하고 있는지 반환해줘. 모든 주제들이 차지하고 있는 퍼센트를 다 더했을 때 100이 되어야해. 1. JPA - 30% 2. Junit - 25% 이런식으로 정규화해서 내놔" + result;
         String apiResponse = openAIService.getTopicFromOpenAI(prompt);
 
         JsonObject jsonObject = JsonParser.parseString(apiResponse).getAsJsonObject();

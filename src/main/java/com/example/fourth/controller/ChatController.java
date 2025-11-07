@@ -23,7 +23,7 @@ public class ChatController {
 
     @Operation(
             summary = "지피티 채팅 URL을 입력하고 분석하기 버튼 눌렀을 때 extract_id와 추출된 토픽 단어들을 반환 - 김나영",
-            description = "지피티 채팅 URL을 입력하고 분석하기 버튼 눌렀을 때 extract_id와 추출된 토픽 단어들을 반환합니다. extract_id는 이후 세션 생성할 때 필요하니 user_id와 같이 보관해두셔야 합니다.",
+            description = "지피티 채팅 URL을 입력하고 분석하기 버튼 눌렀을 때 extract_id와 추출된 토픽 단어들을 반환합니다. 토픽 단어 옆에 퍼센트는 원 그래프 비율 나타낼 때 사용하시면 됩니다. extract_id는 이후 세션 생성할 때 필요하니 user_id와 같이 보관해두셔야 합니다.",
             parameters = {
                     @Parameter(
                             name = "userId",
@@ -46,7 +46,7 @@ public class ChatController {
                                     examples = @ExampleObject(value = """
                     {
                             "extract_id": 9,
-                            "content": "1. SSL/TLS 암호화\\n2. HTTPS 보안 프로토콜\\n3. 데이터 전송 보안"
+                            "content": "1. SSL/TLS 암호화 프로토콜 - 35%\\n2. 하이브리드 자산관리 시스템 - 32%\\n3. 채권과 금융 운용 - 33%"
                     }
                 """))
                     ),

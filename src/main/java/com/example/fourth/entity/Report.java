@@ -28,6 +28,7 @@ public class Report {
     @JoinColumn(name = "folder_id")
     private Folder folder;
 
+    @Column(length = 1000)
     private String title;
 
     public enum ReportOption {
