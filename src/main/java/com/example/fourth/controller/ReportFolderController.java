@@ -25,7 +25,7 @@ public class ReportFolderController {
     private final ReportFolderService reportFolderService;
 
     @Operation(
-            summary = "리포트 내부 저장하기",
+            summary = "리포트 내부 저장하기 - 김도윤",
             description = """
             생성된 리포트를 특정 폴더에 저장합니다.
             - `folderName`은 기존 폴더 이름 또는 새로 생성할 폴더 이름입니다.
@@ -96,7 +96,7 @@ public class ReportFolderController {
     }
 
     @Operation(
-            summary = "사용자의 폴더 목록 조회",
+            summary = "사용자의 폴더 목록 조회 - 김도윤",
             description = """
         특정 사용자(userId)의 리포트 폴더 목록을 조회합니다.
         - 사용자는 자신이 생성한 폴더 리스트를 확인할 수 있습니다.
@@ -144,7 +144,7 @@ public class ReportFolderController {
     }
 
     @Operation(
-            summary = "폴더 내 리포트 목록 조회",
+            summary = "폴더 내 리포트 목록 조회 - 김도윤",
             description = """
         특정 폴더(folderId)에 속한 리포트 목록을 조회합니다.
         - 사용자가 클릭한 폴더 안의 리포트들을 반환합니다.

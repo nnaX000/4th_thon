@@ -1,6 +1,7 @@
 package com.example.fourth.service;
 
 import com.example.fourth.dto.MyPageResponse;
+import com.example.fourth.entity.Report;
 import com.example.fourth.entity.User;
 import com.example.fourth.repository.EntranceRepository;
 import com.example.fourth.repository.ReportRepository;
@@ -11,7 +12,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -66,6 +69,28 @@ public class MyPageService {
         response.setTodayReports(todayReports);
         return response;
 
+    }
+
+    // 잔디
+    public List<Map<String, Object>> getUserActivity(int userId) {
+        return reportRepository.countReportByDate(userId);
+    }
+
+    // 날짜별
+    public List<Map<String, Object>> getReportsByDate(int userId, LocalDate date) {
+        LocalDateTime start = date.atStartOfDay();
+        LocalDateTime end = start.plusDays(1);
+
+        List<Report> reports = reportRepository.findTodayReports(userId, start, end);
+
+        return reports.stream()
+                .map(r -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("reportId", r.getId());
+                    map.put("title", r.getTitle());
+                    return map;
+                })
+                .toList();
     }
 
 }

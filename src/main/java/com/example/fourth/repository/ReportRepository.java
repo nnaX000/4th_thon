@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public interface ReportRepository extends JpaRepository<Report, Long> {
     List<Report>findByFolder_Id(long folderId);
@@ -26,4 +27,18 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     List<Report> findTodayReports(@Param("userId") int userId,
                                   @Param("start") LocalDateTime start,
                                   @Param("end") LocalDateTime end);
+
+    @Query("""
+    SELECT new map(
+        FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m-%d') AS reportDate,
+        COUNT(r) AS count
+    )
+    FROM Report r
+    WHERE r.user.id = :userId
+    GROUP BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m-%d')
+    ORDER BY FUNCTION('DATE_FORMAT', r.createdAt, '%Y-%m-%d') ASC
+    """)
+    List<Map<String, Object>> countReportByDate(@Param("userId") int userId);
+
+
 }

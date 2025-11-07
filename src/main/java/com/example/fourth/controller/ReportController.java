@@ -2,17 +2,20 @@ package com.example.fourth.controller;
 
 
 import com.example.fourth.entity.Report;
+import com.example.fourth.service.MyPageService;
+import com.example.fourth.service.ReportDetailService;
 import com.example.fourth.service.ReportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -21,6 +24,8 @@ import java.util.Map;
 public class ReportController {
 
     private final ReportService reportGenerateService;
+    private final ReportDetailService reportDetailService;
+    private final MyPageService myPageService;
 
     @Operation(
             summary = "리포트 생성 - 김나영",
@@ -106,4 +111,25 @@ public class ReportController {
     ) {
         return reportGenerateService.generateReport(entranceId, userId, options);
     }
+
+    @Operation(
+            summary = "리포트 상세 조회 - 김도윤",
+            description = "reportId를 기반으로 저장된 리포트를 조회합니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "리포트 조회 성공"),
+                    @ApiResponse(responseCode = "404", description = "리포트를 찾을 수 없음")
+            }
+    )
+    @GetMapping("/{reportId}")
+    public Map<String, Object> getReportDetail(@PathVariable Long reportId) {
+        return reportDetailService.getReportById(reportId);
+    }
+
+    @GetMapping("/by-date")
+    public List<Map<String, Object>> getReportByDate(
+            @RequestParam int userId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+                return myPageService.getReportsByDate(userId, date);
+    }
+
 }

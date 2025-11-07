@@ -24,7 +24,7 @@ public class NotionOAuthController {
 
     // 노션 로그인 연결 여부 확인
     @Operation(
-            summary = "노션 연동 상태 확인",
+            summary = "노션 연동 상태 확인 - 김도윤",
             description = """
                 사용자가 Notion 계정과 이미 연동되어 있는지 확인합니다.  
                 `connected: true` → 토큰이 이미 저장된 상태입니다.
@@ -53,7 +53,7 @@ public class NotionOAuthController {
 
     // 노션 로그인 URL 발급
     @Operation(
-            summary = "노션 로그인 URL 발급",
+            summary = "노션 로그인 URL 발급 - 김도윤",
             description = """
                 Notion OAuth 로그인 페이지로 리다이렉트합니다.  
                 사용자가 로그인하면 `/api/notion/callback` 으로 코드가 전달됩니다.
@@ -78,7 +78,7 @@ public class NotionOAuthController {
 
     // 로그인 완료 후 콜백
     @Operation(
-            summary = "노션 로그인 완료 콜백",
+            summary = "노션 로그인 완료 콜백 - 김도윤",
             description = """
                 Notion 로그인 완료 후 authorization code를 받아  
                 access token을 발급받고 사용자 계정에 저장합니다.  
