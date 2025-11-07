@@ -24,7 +24,7 @@ public class ReportExportController {
 
     // 마크다운
     @Operation(
-            summary = "마크다운 내보내기",
+            summary = "마크다운 내보내기 - 김도윤",
             description = """
         마크다운으로 내보내기를 수행합니다.
         """,
@@ -84,7 +84,7 @@ public class ReportExportController {
     }
 
     @Operation(
-            summary = "노션으로 내보내기",
+            summary = "노션으로 내보내기 - 김도윤",
             description = """
                 지정된 리포트를 사용자의 Notion 계정에 새 페이지로 생성합니다.  
                 이 기능을 사용하기 전, 반드시 `/api/notion/authorize` → `/api/notion/callback` 과정을 통해  
