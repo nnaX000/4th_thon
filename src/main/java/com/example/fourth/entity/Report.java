@@ -41,6 +41,14 @@ public class Report {
 
     private boolean notion; // 노션 업로드 여부 (true/false)
 
+    public enum TagOption {
+        POST,   // 게시
+        REVIEW    // 검토
+    }
+
+    @Enumerated(EnumType.STRING)
+    private TagOption tag; // 게시 or 검토
+
     @Lob
     @Column(columnDefinition = "LONGTEXT")
     private String content; // JSON 문자열로 저장되는 전체 리포트 본문
