@@ -8,6 +8,6 @@ import lombok.Setter;
 public class ResultRequest {
     private String userId;
     private Long entranceId;
-    private Long topic;
+    private String topic;
     private String content;
 }

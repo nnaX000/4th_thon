@@ -75,7 +75,8 @@ public class ResultService {
             // 기존 extra_user에 content 추가
             String existing = result.getExtraUser();
             if (existing == null || existing.isBlank()) {
-                result.setExtraUser(request.getContent());
+                String contentJson = objectMapper.writeValueAsString(List.of(request.getContent()));
+                result.setExtraUser(contentJson);
             } else {
                 result.setExtraUser(existing + ", " + request.getContent());
             }
