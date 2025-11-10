@@ -1,14 +1,15 @@
 package com.example.fourth.service;
 
+import com.example.fourth.dto.ResultRequest;
 import com.example.fourth.entity.Result;
 import com.example.fourth.repository.ResultRepository;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -32,6 +33,7 @@ public class ResultService {
             topicData.put("newConcept", parseJsonSafe(result.getNewCcContent()));
             topicData.put("redirectConcept", parseJsonSafe(result.getRedirectCcContent()));
             topicData.put("reference", parseJsonSafe(result.getReference()));
+            topicData.put("officals", parseJsonSafe(result.getOfficials()));
 
             summary.put(result.getTopic(), topicData);
         }
@@ -49,6 +51,39 @@ public class ResultService {
             return objectMapper.readValue(json, Object.class);
         } catch (Exception e) {
             return json; // JSON 파싱 실패 시 원문 그대로 반환
+        }
+    }
+
+    public void addExtraUserContent(ResultRequest request) {
+        List<Result> results = resultRepository.findByEntranceIdAndTopic(request.getEntranceId(), request.getTopic().toString());
+        if (results.isEmpty()) {
+            throw new IllegalArgumentException("해당 결과를 찾을 수 없습니다.");
+        }
+        Result result = results.get(0);
+
+        try {
+            // 기존 extra_user 불러오기
+            List<Map<String, String>> extraUsers = new ArrayList<>();
+
+            if (result.getExtraUser() != null) {
+                extraUsers = objectMapper.readValue(
+                        result.getExtraUser(),
+                        new TypeReference<List<Map<String, String>>>() {}
+                );
+            }
+
+            // 기존 extra_user에 content 추가
+            String existing = result.getExtraUser();
+            if (existing == null || existing.isBlank()) {
+                result.setExtraUser(request.getContent());
+            } else {
+                result.setExtraUser(existing + ", " + request.getContent());
+            }
+
+            resultRepository.save(result);
+
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("extra_user JSON 처리 중 오류 발생", e);
         }
     }
 }

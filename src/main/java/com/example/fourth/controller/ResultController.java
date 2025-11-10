@@ -1,15 +1,13 @@
 package com.example.fourth.controller;
 
+import com.example.fourth.dto.ResultRequest;
 import com.example.fourth.service.ResultService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/result")
@@ -82,5 +80,11 @@ public class ResultController {
             @RequestParam Long entranceId,
             @RequestParam Long userId) {
         return ResponseEntity.ok(resultService.getResultSummary(entranceId, userId));
+    }
+
+    @PostMapping("/addExtraUserContent")
+    public ResponseEntity<?> addExtraUserContent(@RequestBody ResultRequest request) {
+        resultService.addExtraUserContent(request);
+        return ResponseEntity.ok("학습리포트에 추가사항 반영되었습니다.");
     }
 }
