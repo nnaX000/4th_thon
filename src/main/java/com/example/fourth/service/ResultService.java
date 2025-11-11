@@ -87,4 +87,38 @@ public class ResultService {
             throw new RuntimeException("extra_user JSON 처리 중 오류 발생", e);
         }
     }
+
+    public Map<String, Object> getResultDetail(Long entranceId, Long userId, String topic) {
+        List<Result> results = resultRepository.findByEntranceIdAndUserId(entranceId, userId);
+
+        Result matched = results.stream()
+                .filter(r -> r.getTopic().equals(topic))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("해당 조건의 결과를 찾을 수 없습니다."));
+
+        Map<String, Object> detail = new LinkedHashMap<>();
+        detail.put("id", matched.getId());
+        detail.put("entrance_id", matched.getEntrance().getId());
+        detail.put("user_id", matched.getUser().getId());
+        detail.put("topic", matched.getTopic());
+        detail.put("new_concept", matched.getNewConcept());
+        detail.put("new_cc_content", cleanString(matched.getNewCcContent()));
+        detail.put("redirect_concept", matched.getRedirectConcept());
+        detail.put("redirect_cc_content", cleanString(matched.getRedirectCcContent()));
+        detail.put("reference", cleanString(matched.getReference()));
+        detail.put("officials", cleanString(matched.getOfficials()));
+        detail.put("extra_user", cleanString(matched.getExtraUser()));
+        detail.put("created_at", matched.getCreatedAt());
+
+        return detail;
+    }
+
+    private String cleanString(String value) {
+        if (value == null) return "없음";
+        String cleaned = value.replaceAll("\\r\\n|\\n|\\r", " ").replace("\\", "").trim();
+        if (cleaned.isEmpty() || cleaned.equalsIgnoreCase("null")) {
+            return "없음";
+        }
+        return cleaned;
+    }
 }

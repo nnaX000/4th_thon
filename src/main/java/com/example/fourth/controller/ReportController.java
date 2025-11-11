@@ -5,6 +5,7 @@ import com.example.fourth.entity.Report;
 import com.example.fourth.service.MyPageService;
 import com.example.fourth.service.ReportDetailService;
 import com.example.fourth.service.ReportService;
+import com.example.fourth.service.ResultService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,21 +28,41 @@ public class ReportController {
     private final ReportService reportGenerateService;
     private final ReportDetailService reportDetailService;
     private final MyPageService myPageService;
+    private final ResultService resultService;
 
     @Operation(
-            summary = "리포트 생성 - 김나영",
+            summary = "리포트 생성 (리포트 type[주제별/통합별] 선택하고 리포트별로 [리뷰/게시] 선택하여 백엔드로 넘김- 김나영",
             description = """
-    entrance_Id와 user_Id, options 를 기반으로 리포트를 생성합니다.
-    옵션(`options`)에 따라 결과가 다르게 반환됩니다.
-    
-    🔹 통합 리포트 : 여러 주제를 하나로 통합한 리포트 (제목이 /를 기준으로 합쳐져 있음.)  
-    🔹 주제별 리포트 : 각 주제별 리포트를 개별 JSON으로 반환  
-    
-    ⚙️ 요청 파라미터  
-    - `entranceId`  
-    - `userId`: 사용자 ID  
-    - `options`: 리포트 생성 방식 (통합 리포트는 `TOTAL`, 주제별 리포트는 `TOPIC`으로 요청해야 함.)
-    """,
+entranceId, userId, options, tag(s)를 기반으로 리포트를 생성합니다.
+
+🔹 TOTAL (통합 리포트)
+- 모든 주제를 통합하여 하나의 리포트로 생성
+- 단일 tag(post/review)를 받음
+
+🔹 TOPIC (주제별 리포트)
+- 주제별로 각각 리포트를 생성
+- tags 객체 형태로 각 주제별 tag(post/review)를 받음
+
+⚙️ 요청 형식
+- TOTAL 요청 예시:
+{
+  "entranceId": 7,
+  "userId": 2,
+  "options": "TOTAL",
+  "tag": "POST"
+}
+
+- TOPIC 요청 예시:
+{
+  "entranceId": 7,
+  "userId": 2,
+  "options": "TOPIC",
+  "tags": {
+    "로그인 방법": "POST",
+    "소셜 계정 연동": "REVIEW"
+  }
+}
+""",
             responses = {
                     @ApiResponse(
                             responseCode = "200",
@@ -49,51 +71,138 @@ public class ReportController {
                                     mediaType = "application/json",
                                     examples = {
                                             @ExampleObject(
-                                                    name = "통합 리포트 예시",
+                                                    name = "통합 리포트 응답 예시 (TOTAL)",
                                                     value = """
-                        {
-                          "entranceId": 1,
-                          "userId": 3,
-                          "title": "SSL TLS / 보안 프로토콜",
-                          "results": {
-                            "SSL TLS": {
-                              "topic": "SSL TLS",
-                              "newConceptCount": 3,
-                              "redirectConceptCount": 2,
-                              "newConcept": {
-                                "새로알게된": {
-                                  "1": "SSL/TLS는 https를 통해 암호화된 통신을 제공한다.",
-                                  "2": "TLS는 SSL의 개선판으로 보안성이 향상되었다."
-                                }
-                              },
-                              "redirectConcept": {
-                                "바로잡은": {
-                                  "1": {
-                                    "잘못된이해": "SSL은 현재도 널리 사용된다.",
-                                    "올바른이해": "TLS가 SSL을 대체하였다."
-                                  }
-                                }
-                              },
-                              "reference": {
-                                "추천자료": {
-                                  "1": {
-                                    "제목": "TLS 1.3 RFC 8446",
-                                    "링크": "https://datatracker.ietf.org/doc/html/rfc8446"
-                                  }
-                                }
-                              }
-                            },
-                            "보안 프로토콜": {
-                              "topic": "보안 프로토콜",
-                              "newConceptCount": 2,
-                              "redirectConceptCount": 1,
-                              "newConcept": {...},
-                              "redirectConcept": {...},
-                              "reference": {...}
-                            }
-                          }
-                        }
-                        """
+{
+  "status": "success",
+  "reportCount": 1,
+  "reports": [
+    {
+      "reportId": 42,
+      "title": "로그인 방법 / 소셜 계정 연동",
+      "tag": "POST",
+      "results": [
+        {
+          "id": 64,
+          "entrance_id": 7,
+          "user_id": 2,
+          "topic": "로그인 방법",
+          "new_concept": 3,
+          "new_cc_content": {
+            "새로알게된": {
+              "1": "구글, 애플, 마이크로소프트 계정을 통한 소셜 로그인 지원",
+              "2": "전화번호를 이용한 로그인 옵션"
+            }
+          },
+          "redirect_concept": 2,
+          "redirect_cc_content": {
+            "바로잡은": {
+              "1": {
+                "잘못된이해": "로그인은 항상 복잡해야 한다.",
+                "올바른이해": "간단한 로그인도 보안적일 수 있다."
+              }
+            }
+          },
+          "reference": {
+            "추천자료": {
+              "1": {
+                "제목": "Modern Authentication Guide",
+                "링크": "https://docs.microsoft.com/"
+              }
+            }
+          },
+          "created_at": "2025-11-11T01:08:31"
+        }
+      ]
+    }
+  ]
+}
+"""
+                                            ),
+                                            @ExampleObject(
+                                                    name = "주제별 리포트 응답 예시 (TOPIC)",
+                                                    value = """
+{
+  "status": "success",
+  "reportCount": 2,
+  "reports": [
+    {
+      "reportId": 101,
+      "title": "로그인 방법",
+      "tag": "POST",
+      "results": [
+        {
+          "id": 64,
+          "entrance_id": 7,
+          "user_id": 2,
+          "topic": "로그인 방법",
+          "new_concept": 3,
+          "new_cc_content": {
+            "새로알게된": {
+              "1": "구글 로그인 기능 추가됨"
+            }
+          },
+          "redirect_concept": 2,
+          "redirect_cc_content": {
+            "바로잡은": {
+              "1": {
+                "잘못된이해": "SSL은 여전히 사용됨",
+                "올바른이해": "TLS가 SSL을 대체함"
+              }
+            }
+          },
+          "reference": {
+            "추천자료": {
+              "1": {
+                "제목": "OAuth2 개요",
+                "링크": "https://oauth.net/2/"
+              }
+            }
+          },
+          "created_at": "2025-11-11T01:08:31"
+        }
+      ]
+    },
+    {
+      "reportId": 102,
+      "title": "소셜 계정 연동",
+      "tag": "REVIEW",
+      "results": [
+        {
+          "id": 65,
+          "entrance_id": 7,
+          "user_id": 2,
+          "topic": "소셜 계정 연동",
+          "new_concept": 2,
+          "new_cc_content": {
+            "새로알게된": {
+              "1": "구글, 애플 로그인 연동이 가능함"
+            }
+          },
+          "redirect_concept": 1,
+          "redirect_cc_content": {
+            "바로잡은": {
+              "1": {
+                "잘못된이해": "소셜 로그인은 위험함",
+                "올바른이해": "OAuth 기반으로 안전하게 처리됨"
+              }
+            }
+          },
+          "reference": {
+            "추천자료": {
+              "1": {
+                "제목": "Spring Social Login",
+                "링크": "https://www.baeldung.com/spring-security-social-signin"
+              }
+            }
+          },
+          "created_at": "2025-11-11T01:09:00"
+        }
+      ]
+    }
+  ]
+}
+"""
                                             )
                                     }
                             )
@@ -103,14 +212,54 @@ public class ReportController {
                     @ApiResponse(responseCode = "500", description = "서버 내부 오류")
             }
     )
-    @GetMapping
-    public Map<String, Object> generateReport(
-            @RequestParam Long entranceId,
-            @RequestParam Long userId,
-            @RequestParam Report.ReportOption options
-    ) {
-        return reportGenerateService.generateReport(entranceId, userId, options);
+    @PostMapping
+    public Map<String, Object> generateReport(@RequestBody Map<String, Object> requestBody) {
+        Long entranceId = ((Number) requestBody.get("entranceId")).longValue();
+        Long userId = ((Number) requestBody.get("userId")).longValue();
+
+        // options 파싱
+        Object optionsObj = requestBody.get("options");
+        if (optionsObj == null) {
+            throw new IllegalArgumentException("options 파라미터가 필요합니다.");
+        }
+
+        String typeStr = null;
+        if (optionsObj instanceof Map<?, ?> optionMap) {
+            Object typeValue = optionMap.get("type");
+            if (typeValue instanceof String) {
+                typeStr = (String) typeValue;
+            } else {
+                throw new IllegalArgumentException("options.type 값이 문자열이어야 합니다.");
+            }
+        } else if (optionsObj instanceof String) {
+            typeStr = (String) optionsObj;
+        } else {
+            throw new IllegalArgumentException("options 값이 유효하지 않습니다.");
+        }
+
+        Report.ReportOption options;
+        try {
+            options = Report.ReportOption.valueOf(typeStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("options 값이 'TOTAL' 또는 'TOPIC'이어야 합니다.");
+        }
+
+        // tag 혹은 tags 받기
+        Map<String, String> tags = null;
+
+        // case 1: TOPIC (주제별 tag)
+        if (requestBody.containsKey("tags")) {
+            tags = (Map<String, String>) requestBody.get("tags");
+        }
+        // case 2: TOTAL (단일 tag)
+        else if (requestBody.containsKey("tag")) {
+            tags = new HashMap<>();
+            tags.put("TOTAL", (String) requestBody.get("tag"));
+        }
+
+        return reportGenerateService.generateReport(entranceId, userId, options, tags);
     }
+
 
     @Operation(
             summary = "리포트 상세 조회 - 김도윤",
@@ -130,6 +279,51 @@ public class ReportController {
             @RequestParam int userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
                 return myPageService.getReportsByDate(userId, date);
+    }
+
+    @Operation(
+            summary = "리포트 결과 상세 조회 - 김나영",
+            description = """
+            entranceId, userId, topic을 기반으로 리포트 데이터를 반환합니다.
+            다음과 같은 쿼리 파라미터를 전달해야 합니다:
+            - entranceId (Long)
+            - userId (Long)
+            - topic (String)
+            
+            ✅ 응답 예시:
+            {
+              "id": 64,
+              "entrance_id": 7,
+              "user_id": 2,
+              "topic": "로그인 방법",
+              "new_concept": 3,
+              "new_cc_content": { "새로알게된": { "1": "..." } },
+              "redirect_concept": 2,
+              "redirect_cc_content": { "바로잡은": { "1": { ... } } },
+              "reference": { "추천자료": { "1": { "제목": "...", "링크": "..." } } },
+              "officials": "없음",
+              "extra_user": ["이 드럼 소리 너무 좋아요!"],
+              "created_at": "2025-11-11T01:08:31"
+            }
+            """,
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "결과 상세 조회 성공"
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "해당 결과를 찾을 수 없음"
+                    )
+            }
+    )
+    @GetMapping("/detail")
+    public Map<String, Object> getResultDetail(
+            @RequestParam Long entranceId,
+            @RequestParam Long userId,
+            @RequestParam String topic
+    ) {
+        return resultService.getResultDetail(entranceId, userId, topic);
     }
 
 }
