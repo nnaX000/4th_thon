@@ -44,6 +44,12 @@ public class Result {
     @Column(name = "reference", columnDefinition = "JSON")
     private String reference;
 
+    @Column(name = "officials", columnDefinition = "JSON")
+    private String officials;
+
+    @Column(name = "extra_user", columnDefinition = "JSON")
+    private String extraUser;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 }

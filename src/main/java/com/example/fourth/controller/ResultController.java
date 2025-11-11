@@ -1,15 +1,13 @@
 package com.example.fourth.controller;
 
+import com.example.fourth.dto.ResultRequest;
 import com.example.fourth.service.ResultService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/result")
@@ -82,5 +80,30 @@ public class ResultController {
             @RequestParam Long entranceId,
             @RequestParam Long userId) {
         return ResponseEntity.ok(resultService.getResultSummary(entranceId, userId));
+    }
+
+    @Operation(
+            summary = "extra_user에 content 추가",
+            description = """
+    특정 Result 데이터의 extra_user(JSON) 필드에 새로운 content를 추가합니다.
+
+    Request Body 예시:
+    {
+      "userId": 2,
+      "entranceId": 7,
+      "topic": "로그인 방법",
+      "content": "이 드럼 소리 너무 좋아요!"
+    }
+    """
+    )
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "성공적으로 content가 추가됨"),
+            @ApiResponse(responseCode = "400", description = "해당 entranceId/topic에 해당하는 Result가 존재하지 않음"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류 (JSON 처리 오류 등)")
+    })
+    @PostMapping("/addExtraUserContent")
+    public ResponseEntity<?> addExtraUserContent(@RequestBody ResultRequest request) {
+        resultService.addExtraUserContent(request);
+        return ResponseEntity.ok("학습리포트에 추가사항 반영되었습니다.");
     }
 }

@@ -13,6 +13,8 @@ import java.util.Optional;
 public interface ResultRepository extends JpaRepository<Result, Long> {
     List<Result> findByEntranceIdAndUserId(Long entranceId, Long userId);
 
+    List<Result> findByEntranceIdAndTopic(Long entranceId, String topic);
+
     // 유저별 총 newConcept 합계
     @Query("SELECT COALESCE(SUM(r.newConcept), 0) FROM Result r WHERE r.user.id = :userId")
     int sumNewConceptByUserId(@Param("userId") int userId);

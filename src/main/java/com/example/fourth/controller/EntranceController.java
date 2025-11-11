@@ -267,6 +267,22 @@ public class EntranceController {
                             String refContent = cleanJsonBlock(extractContent(refResponse));
                             String prettyRef = prettyJson(refContent);
 
+                            // ===== 5. 공식 문서 =====
+                            String officialPrompt = String.format("""
+                            주제 "%s"와 가장 관련성 높은 **공식 문서(Official Documentation)** 1개만 JSON 형식으로 추천해줘.
+                            ⚠️ 반드시 아래 구조를 "정확히" 따라야 해.
+                            {
+                              "공식문서": {
+                                "제목": "OpenAI API Reference",
+                                "링크": "https://platform.openai.com/docs/api-reference"
+                              }
+                            }
+                            """, topic);
+
+                            String officialResponse = openAIService.getTopicFromOpenAI(officialPrompt);
+                            String officialContent = cleanJsonBlock(extractContent(officialResponse));
+                            String prettyOfficial = prettyJson(officialContent);
+
                             emitter.next(event("done", json("done", "자료 큐레이션", topic, 100, null)));
 
                             // ===== DB 저장 =====
@@ -279,6 +295,7 @@ public class EntranceController {
                                     .redirectConcept(redirectConceptCount)
                                     .redirectCcContent(safeJson(prettyRedirectConcept))
                                     .reference(safeJson(prettyRef))
+                                    .officials(safeJson(prettyOfficial))
                                     .createdAt(LocalDateTime.now())
                                     .build();
 
