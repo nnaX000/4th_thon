@@ -125,6 +125,14 @@ public class ReportController {
         return reportDetailService.getReportById(reportId);
     }
 
+    @Operation(
+            summary = "리포트 날짜별 조회 - 김도윤",
+            description = "userId와 date를 기반으로 저장된 리포트를 조회합니다.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "리포트 조회 성공"),
+                    @ApiResponse(responseCode = "404", description = "리포트를 찾을 수 없음")
+            }
+    )
     @GetMapping("/by-date")
     public List<Map<String, Object>> getReportByDate(
             @RequestParam int userId,
