@@ -4,28 +4,11 @@ import com.example.fourth.entity.Extract_txt;
 import com.example.fourth.entity.User;
 import com.example.fourth.repository.ExtractRepository;
 import com.example.fourth.repository.UserRepository;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-
-import com.example.fourth.entity.Extract_txt;
-import com.example.fourth.entity.User;
-import com.example.fourth.repository.ExtractRepository;
-import com.example.fourth.repository.UserRepository;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -59,7 +42,7 @@ public class ChatCrawlerService {
             throw new IllegalArgumentException("ChatGPT 공유 링크에서 대화를 가져오지 못했습니다.");
         }
 
-        // 4. 유저 조회 및 대화 저장
+        // 4. 유저 조회 및 저장
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("해당 유저가 존재하지 않습니다."));
 
@@ -69,7 +52,7 @@ public class ChatCrawlerService {
                 .build();
         extractTxtRepository.save(extract);
 
-        // 5. 프롬프트 구성
+        // 5. 프롬프트 생성
         String prompt = """
 다음 대화 내용을 분석해서 주요 주제 3가지를 추출해줘.
 각 주제별로 대화 전체에서 차지하는 비율(%)을 정규화해서 알려줘.
@@ -92,34 +75,49 @@ public class ChatCrawlerService {
             throw new IllegalArgumentException("OpenAI API 응답이 비어 있습니다.");
         }
 
-        // 7. 1차 파싱 (OpenAI 전체 응답 구조)
-        JsonObject root = JsonParser.parseString(apiResponse).getAsJsonObject();
-        JsonArray choices = root.getAsJsonArray("choices");
-        if (choices == null || choices.size() == 0) {
-            throw new IllegalArgumentException("응답에 choices 필드가 없습니다: " + apiResponse);
+        // 7. Gson lenient 모드 설정 (깨진 JSON 허용)
+        Gson gson = new GsonBuilder()
+                .setLenient()
+                .create();
+
+        JsonObject root;
+        try {
+            root = gson.fromJson(apiResponse, JsonObject.class);
+        } catch (JsonSyntaxException e) {
+            throw new IllegalArgumentException("OpenAI 응답이 올바른 JSON 형식이 아닙니다: " + apiResponse);
         }
+
+        // 8. choices → message → content 추출
+        JsonArray choices = root.getAsJsonArray("choices");
+        if (choices == null || choices.size() == 0)
+            throw new IllegalArgumentException("응답에 choices 필드가 없습니다: " + apiResponse);
 
         JsonObject firstChoice = choices.get(0).getAsJsonObject();
         JsonObject message = firstChoice.getAsJsonObject("message");
-        if (message == null || !message.has("content")) {
+        if (message == null || !message.has("content"))
             throw new IllegalArgumentException("응답에 message.content가 없습니다: " + apiResponse);
-        }
 
-        // 8. content 문자열 정제
+        // 9. content 문자열 정제
         String content = message.get("content").getAsString()
                 .replace("\\n", "")
                 .replace("\\", "")
                 .replace("\"{", "{")
-                .replace("}\"", "}");
+                .replace("}\"", "}")
+                .trim();
 
-        // 9. 2차 파싱 (topics 배열 추출)
-        JsonObject contentJson = JsonParser.parseString(content).getAsJsonObject();
-        JsonArray topics = contentJson.getAsJsonArray("topics");
-        if (topics == null || topics.size() == 0) {
-            throw new IllegalArgumentException("응답에 topics 필드가 없습니다: " + content);
+        // 10. 2차 파싱 (topics 추출)
+        JsonObject contentJson;
+        try {
+            contentJson = JsonParser.parseString(content).getAsJsonObject();
+        } catch (Exception e) {
+            throw new IllegalArgumentException("message.content가 올바른 JSON 형식이 아닙니다: " + content);
         }
 
-        // 10. 사람이 보기 좋은 문자열 포맷으로 변환
+        JsonArray topics = contentJson.getAsJsonArray("topics");
+        if (topics == null || topics.size() == 0)
+            throw new IllegalArgumentException("응답에 topics 필드가 없습니다: " + content);
+
+        // 11. 보기 좋은 포맷으로 변환
         StringBuilder formatted = new StringBuilder();
         for (int i = 0; i < topics.size(); i++) {
             JsonObject topic = topics.get(i).getAsJsonObject();
@@ -136,7 +134,7 @@ public class ChatCrawlerService {
             if (i < topics.size() - 1) formatted.append("\n");
         }
 
-        // 11. 결과 반환
+        // 12. 최종 반환
         Map<String, Object> response = new HashMap<>();
         response.put("extract_id", extract.getId());
         response.put("content", formatted.toString());
