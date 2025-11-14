@@ -25,6 +25,7 @@ public class SecurityConfig {
                     CorsConfiguration config = new CorsConfiguration();
                     config.setAllowCredentials(true);
                     config.addAllowedOrigin("http://localhost:5173");
+                    config.addAllowedOrigin("https://2025-line4thon-crux.vercel.app");
                     config.addAllowedHeader("*");
                     config.addAllowedMethod("*");
                     return config;
