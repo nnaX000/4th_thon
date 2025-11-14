@@ -25,13 +25,14 @@ public class SecurityConfig {
                     CorsConfiguration config = new CorsConfiguration();
                     config.setAllowCredentials(true);
                     config.addAllowedOrigin("http://localhost:5173");
+                    config.addAllowedOrigin("https://sswulion.shop");
                     config.addAllowedOrigin("https://2025-line4thon-crux.vercel.app");
                     config.addAllowedHeader("*");
                     config.addAllowedMethod("*");
                     return config;
                 }))
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers("/api/user/**","api/notion/**","/swagger-ui/**", "/v3/api-docs/**","/chat/**","/entrance/**","/result/**","/report/**").permitAll()
+                        .requestMatchers("/api/user/**","/api/notion/**","/swagger-ui/**", "/v3/api-docs/**","/chat/**","/entrance/**","/result/**","/report/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess
