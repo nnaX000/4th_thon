@@ -109,7 +109,8 @@ public class NotionOAuthController {
         String accessToken = notionOAuthService.codeToToken(code);
         userService.saveNotionToken(email, accessToken);
 
-        URI uri = URI.create("http://localhost:3000/integrations/notion/success");
+        URI uri = URI.create("https://2025-line4thon-crux.vercel.app/integrations/notion/success");
         return ResponseEntity.status(302).location(uri).build();
+
     }
 }

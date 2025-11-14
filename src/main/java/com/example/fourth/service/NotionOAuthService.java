@@ -31,13 +31,17 @@ public class NotionOAuthService {
 
     // 로그인 페이지로 이동시킬 url
     public String getAuthorizationUrl(String email) {
+
+        String encodedRedirectUri = URLEncoder.encode(redirectUri, StandardCharsets.UTF_8);
+
         return authUrl
-                +"?client_id=" + clientId
-                +"&response_type=code"
-                +"&owner=user"
-                +"&redirect_uri=" + redirectUri
+                + "?client_id=" + clientId
+                + "&response_type=code"
+                + "&owner=user"
+                + "&redirect_uri=" + encodedRedirectUri
                 + "&state=" + URLEncoder.encode(email, StandardCharsets.UTF_8);
     }
+
 
     // 로그인 페이지로 이동
     public String codeToToken(String code) {
