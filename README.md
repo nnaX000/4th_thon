@@ -5,6 +5,7 @@
     <img src="https://img.shields.io/badge/Spring%20Boot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white"/>
     <img src="https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white"/>
     <img src="https://img.shields.io/badge/AWS%20EC2-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white"/>
+    <img src="https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white"/>
   </p>
 
   <p>대화를 흩날리지 말고, 자산화하세요.<br>AI 기반 학습 구조화 플랫폼</p>
@@ -42,8 +43,9 @@ GPT 대화 속에서 흩어진 정보들을 자동으로 정제해 '새로운 �
 <br><br>
 
 ## 1. GPT 링크 기반 대화 크롤링
-- 공유된 GPT 대화 링크를 파싱하여 전체 메시지 자동 수집
-- 노이즈 제거 및 정제 처리 파이프라인 구현  
+- 공유된 GPT 대화 링크에서 share ID를 파싱해 원본 대화 데이터를 자동 수집
+- jina.ai 프록시를 이용해 CORS 우회 크롤링 처리
+- 수집된 대화를 텍스트 정제(escape 제거, 노이즈 제거) 후 저장하는 파이프라인 구현
 <br>
 
 ## 2. GPT API 분석 엔진 개발
@@ -73,10 +75,10 @@ GPT 대화 속에서 흩어진 정보들을 자동으로 정제해 '새로운 �
 
 | 이름 | 역할 |
 |------|------|
-| **하지민** | PD |
-| **이보연** | FE |
-| **윤세연** | FE |
-| **김나영** | BE |
-| **김도윤** | BE |
+| **하지민** | 기획 디자인 |
+| **이보연** | 프론트엔드 |
+| **윤세연** | 프론트엔드 |
+| **김나영** | 백엔드 |
+| **김도윤** | 백엔드 |
 
 <br><br>
