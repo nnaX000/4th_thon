@@ -15,31 +15,25 @@ public class DiscordErrorPayload {
     private String errorType;
     private String message;
 
-    @Getter
-    @AllArgsConstructor
-    public class DiscordWebhookRequest {
-        private String content;
+    public DiscordWebhookRequest toWebhookRequest() {
 
-        public com.example.fourth.dto.DiscordWebhookRequest toWebhookRequest() {
+        String content = """
+        🚨 **API 요청 처리 중 에러 발생**
+        - 발생 시각: %s
+        - Method: %s
+        - URL: %s
+        - Client IP: %s
+        - Exception: %s
+        - Message: %s
+        """.formatted(
+                timestamp,
+                method,
+                uri,
+                clientIp,
+                errorType,
+                message
+        );
 
-            String content = """
-    🚨 **API 요청 처리 중 에러 발생**
-    - 발생 시각: %s
-    - Method: %s
-    - URL: %s
-    - Client IP: %s
-    - Exception: %s
-    - Message: %s
-    """.formatted(
-                    timestamp,
-                    method,
-                    uri,
-                    clientIp,
-                    errorType,
-                    message
-            );
-
-            return new com.example.fourth.dto.DiscordWebhookRequest(content);
-        }
+        return new DiscordWebhookRequest(content);
     }
 }

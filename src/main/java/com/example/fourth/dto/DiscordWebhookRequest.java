@@ -7,8 +7,6 @@ import lombok.Getter;
 @AllArgsConstructor
 public class DiscordWebhookRequest {
     private String content;
-
-
 }
 
 
